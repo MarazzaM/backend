@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -14,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
+	"github.com/skip2/go-qrcode"
 )
 
 func uploadFile(w http.ResponseWriter, r *http.Request) {
@@ -40,8 +42,7 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 
 	// AWS S3 integration
 	var (
-		awsEndpoint = "http://localhost:9444/"
-		//awsEndpoint    = "http://localhost:9444/newbucket"  <- Esto puede funcionar en AWS
+		awsEndpoint    = "http://localhost:9444/"
 		awsAccessKeyID = "AKIAIOSFODNN7EXAMPLE"
 		awsSecretKey   = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 		dummyRegion    = "us-east-1" // Placeholder region
@@ -76,16 +77,31 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Generate a QR code for the image URL
+	imageURL := imageEndpoint + strings.TrimPrefix(objectKey, "newbucket/")
+	qrCode, err := qrcode.Encode(imageURL, qrcode.Medium, 256)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		fmt.Println("Error generating QR code:", err)
+		return
+	}
+
+	// Encode the QR code image as base64
+	qrCodeBase64 := base64.StdEncoding.EncodeToString(qrCode)
+
 	// Prepare data for the template
 	data := struct {
-		Filename string
-		FileSize int64
-		ImageURL string // Add ImageURL field
+		Filename    string
+		FileSize    int64
+		ImageURL    string // Add ImageURL field
+		QRCodeImage string // Add QRCodeImage field
 	}{
-		Filename: uuidFilename,
-		FileSize: handler.Size,
-		ImageURL: imageEndpoint + strings.TrimPrefix(objectKey, "newbucket/"), // Construct the image URL
+		Filename:    uuidFilename,
+		FileSize:    handler.Size,
+		ImageURL:    imageURL,
+		QRCodeImage: qrCodeBase64,
 	}
+
 	// Render the HTML template
 	tmpl, err := template.ParseFiles("upload.html")
 	if err != nil {

@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Upload Result</title>
+    <title>File Upload</title>
 </head>
 <body>
-    <h2>File Uploaded Successfully!</h2>
-    <p>Filename: {{ .Filename }}</p>
-    <p>File Size: {{ .FileSize }}</p>
-    <img src="{{ .ImageURL }}" alt="Uploaded Image">
+    <h1>Uploaded File Details</h1>
+    <p><strong>Filename:</strong> {{.Filename}}</p>
+    <p><strong>File Size:</strong> {{.FileSize}} bytes</p>
+    <p><strong>Image URL:</strong> {{.ImageURL}}</p>
+    <img src="data:image/png;base64,{{ .QRCodeImage }}" alt="QR Code">
 </body>
 </html>
